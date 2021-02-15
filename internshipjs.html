@@ -3,15 +3,224 @@
   <head>
     <meta charset="utf-8">
     <title>Задание JS</title>
-    <script type="text/javascript" src="data.json"></script>
-    <script type="text/javascript" src="script.js"></script>
+    <!-- <script type="text/javascript" src="script.js"></script> -->
   </head>
   <body>
-    <header>
-    </header>
+    <div style="margin: 15px auto; display: table;">
+      <button onclick="sortArr(0)">Sort By FirstName</button>
+      <button onclick="sortArr(1)">Sort By LastName</button>
+      <button onclick="sortArr(2)">Sort By about</button>
+      <button onclick="sortArr(3)">Sort By eyeColor</button>
+    </div>
 
-    <section>
-    </section>
+    <table style="margin: 0 auto; vertical-align: middle" border="1" cellspacing="0" width="50%">
+    </table>
+
+    <div align="center"><p><a onclick="renderPrevPage()" href="#">Previous page</a>
+      <span> | </span><a onclick="renderNextPage()" href="#">Next page</a></p></div>
+
+    <div align="center">
+
+      <textarea id="edit" rows="5" cols="33">
+      </textarea>
+      <br>
+      <button onclick="changeButtonClick()">Change value</button>
+
+    </div>
+
+    <script type="text/javascript">
+
+      // Получаем таблицу
+      var table = document.querySelector('table');
+      var tr;
+      var td;
+      // URL данных JSON
+      var requestURL = 'https://raw.githubusercontent.com/sanicDogg/infotecsJSIntern/master/data.json';
+
+      var request = new XMLHttpRequest();
+      // Список карт с полями: Имя, Фамилия, about, eyeColor
+      var arr = [[], {}];
+      // Текущая страница
+      var currentPage = 0;
+
+      request.open('GET', requestURL);
+
+      request.responseType = 'json';
+      request.send();
+
+      request.onload = function() {
+        var data = request.response;
+        render(data);
+      }
+
+      // Обработчик клика по ячейкам таблицы
+      table.onclick = function(event) {
+        let target = event.target;
+        let textarea = document.getElementById('edit');
+        let index = target.parentElement.getAttribute('index');
+        let field = target.getAttribute('field');
+        textarea.setAttribute('index', index);
+        textarea.setAttribute('field', field);
+        textarea.value = arr[index].get(field);
+      };
+
+      function changeButtonClick() {
+        let textarea = document.getElementById('edit');
+        let index = textarea.getAttribute('index');
+        let field = textarea.getAttribute('field');
+        arr[index].set(field, textarea.value);
+        printArrToTable(currentPage);
+      }
+
+      function renderPrevPage() {
+        currentPage--;
+        printArrToTable(currentPage);
+      }
+
+      function renderNextPage() {
+        currentPage++;
+        printArrToTable(currentPage);
+      }
+
+      function printArrToLog() {
+        arr.forEach(function(value,key) {
+          console.log('key = ' + key +', value = ' + value);
+          for (let field of value.values()) {
+            console.log(field);
+          }
+        });
+      }
+
+      function printArrToTable(page) {
+        table.textContent = '';
+
+        for (let i = (10 * page);
+              i < (10 * page) + 10; i++) {
+          createTr(i);
+          for (let [key, value] of arr[i].entries()) {
+            if (key == 'about') {
+              let text = value;
+              if (text.length > 110)
+                text = text.slice(0, 110) + "...";
+              printTd(text, key, false);
+              console.log('about');
+              continue;
+            }
+
+            if (key == 'eyeColor') {
+              printTd(value, key, true);
+              continue;
+            }
+            printTd(value, key, false);
+          }
+        }
+      }
+
+      function printTd(text, attrValue, isColor) {
+        td = document.createElement('td');
+        td.setAttribute('align', 'center');
+        td.setAttribute('field', attrValue);
+        if (!isColor)
+          td.textContent = text;
+        else {
+          let div = document.createElement('div');
+          div.style.width = '20px';
+          div.style.height = '20px';
+          div.style.background = text;
+          td.appendChild(div);
+          //td.style.width = '40px';
+          //td.style.background = text;
+        }
+        tr.appendChild(td);
+      }
+
+      function createTr(attrValue) {
+        tr = document.createElement('tr');
+        tr.setAttribute('index', attrValue);
+        table.appendChild(tr);
+      }
+
+      function sortArr(parameter) {
+        let tempArr = [[], {}];
+        let c = 0;
+
+        for (let i = (10 * currentPage);
+              i < (10 * currentPage) + 10; i++) {
+          tempArr[c] = arr[i];
+          c++;
+        }
+
+        switch (parameter){
+          case 0:
+            tempArr.sort(function(a, b) {
+              if (a.get('firstName') < b.get('firstName')) return -1;
+              if (a.get('firstName') > b.get('firstName')) return 1;
+            });
+            break;
+          case 1:
+            tempArr.sort(function(a, b) {
+              if (a.get('lastName') < b.get('lastName')) return -1;
+              if (a.get('lastName') > b.get('lastName')) return 1;
+            });
+            break;
+          case 2:
+            tempArr.sort(function(a, b) {
+              if (a.get('about') < b.get('about')) return -1;
+              if (a.get('about') > b.get('about')) return 1;
+            });
+            break;
+          case 3:
+            tempArr.sort(function(a, b) {
+              if (a.get('eyeColor') < b.get('eyeColor')) return -1;
+              if (a.get('eyeColor') > b.get('eyeColor')) return 1;
+            });
+            break;
+        }
+
+        c = 0;
+        for (let i = (10 * currentPage);
+              i < (10 * currentPage) + 10; i++) {
+          arr[i] = tempArr[c];
+          c++;
+        }
+
+        printArrToTable(currentPage);
+      }
+
+      // Функция первичного вывода таблицы из JSON.
+      // Заполняет массив arr элементами.
+      function render(jsonObj) {
+        for (let i=0; i < jsonObj.length; i++) {
+          // Добавляем строку в таблицу
+          createTr(i);
+
+          let temp = new Map();
+
+          // Вывод столбцов
+          for (let field in jsonObj[i]) {
+            if (field != 'id' && field != 'phone'){
+              switch (field) {
+                case 'name':
+                  for (let subfield in jsonObj[i][field]) {
+                    temp.set(subfield, jsonObj[i][field][subfield]);
+                  }
+                  break;
+                case 'about':
+                  temp.set(field, jsonObj[i][field]);
+                  break;
+                case 'eyeColor':
+                  temp.set(field, jsonObj[i][field]);
+                  break;
+              }
+            }
+          }
+          arr[i] = temp;
+        }
+
+        printArrToTable(currentPage);
+      }
+
+    </script>
   </body>
 
 </html>
